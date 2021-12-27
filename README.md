@@ -37,5 +37,5 @@ This module is included with various inputs and outputs, such as optical sensors
 2. Send the RFID info to a PC via TCP/IP as an XML-encoded string
 3. The PC program shall decode the information and display the relevant information on screen during program execution
 4. The PC program shall return an estimated processing time to the PLC via TCP/IP
-5. The PLC shall simulate the physical processing time by letting the pallet wait for the returned time.
-6. The decoded data shall be stored in a file on the PC, so that it can be analyzed later.
+6. The PLC shall simulate the physical processing time by letting the pallet wait for the returned time.
+7. The decoded data shall be stored in a file on the PC, so that it can be analyzed later.
