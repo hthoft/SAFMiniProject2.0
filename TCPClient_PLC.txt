@@ -1,0 +1,312 @@
+// This code runs within a loop.
+// Thus the value 'state == #' defines, the section in the code that is executing constantly.
+
+CASE state OF
+
+    0:  // Initialization of system (State == 0 is initial).
+
+        // Apply lock to lifting device at upper-position (false == active, true == non-active)
+    IO.xQA3_BRAKE := FALSE;
+
+        // Set lifting device to upper-position
+    IO.xQA3_DOWN := FALSE;
+    IO.xQA3_UP := TRUE;
+
+        // Set lifting device to right position
+    IO.xQA2_LEFT := FALSE;
+    IO.xQA2_RIGHT := TRUE;
+
+        // Start conveyor. Move right at normal speed
+    IO.xQA1_RIGHT := TRUE;
+
+        // Engage the carriage lock, so that oncoming carriages will not move past.
+    IO.xMB20 := FALSE;
+
+        // Clear errors that might have occured on the RFID reader
+    RFID.ClearError();
+
+        // Initialization of TCP connection. IP and port is set below:
+    TCPclient.Connect(sIP := '172.20.66.28', uiPort := 65000);
+
+        // Lastly exit this state, and go to section 1.
+    state := 1;
+
+
+    1:  // Wait for TCP connection or surpass to section 2.
+        // When true, jump to next section. When false, jump to section 2 to continue without TCP connection.
+        IF TCPclient.xConnected AND TCPclient.xReady THEN
+            state := 11;
+        ELSE
+            state := 2;
+        END_IF
+
+
+    11: // Wait for the RFID to become available.
+        IF RFID.xReady THEN
+            RFID.Connect(usiNodeId := 32, usiNetworkId := 0, usiChannel := 1);
+            state := 12;
+        END_IF
+
+
+    12: // wait for the RFID to again become available, after connection attempt.
+        IF RFID.xReady THEN
+            state := 2;
+    END_IF
+
+
+    2:  // The main idle section. This is where we wait for a carrier.
+
+            // Set conveyor to move right at normal speed. (Used again, in case of resets)
+        IO.xQA1_RIGHT := TRUE;
+            // Chech if a carrier has arrived at the fourth and last position sensor.
+        IF io.xBG21 = TRUE THEN
+                // Initialize a 1 second timer
+            timer(IN := TRUE, PT := T# 1S);
+            state := 301;
+        END_IF
+
+
+    301: // Wait for the timer to end.
+        IF timer.Q = TRUE THEN
+            // Disable the timer
+            timer(IN := FALSE);
+            state := 3;
+        END_IF
+
+
+    3:  // Read the RFID tag from the carrier
+            // Use the ReadTag function with given parameters, to collect the RFID data
+        RFID.ReadTag(uiStartAddress := 0, uiDataLength := SIZEOF(rfidData), ADR(rfidData));
+
+            // Flip the direction of the bytes that have been read. Thus the inverse number (correct number) is collected
+        CarrierID := dc_ecp.SwapWORD(rfidData.uiCarrierID);
+
+            // Create a string (CarrierString) from the CarrierID, for later use
+        CarrierString := UINT_TO_STRING(CarrierID);
+
+            // Create a DWORD from the string, for later / debug use
+        CarrierD := STRING_TO_DWORD(CarrierString);
+        state := 31;
+
+
+    31: // Keep waiting until the RFID has been read. The RFID.xReady turns True, when it is complete
+        IF RFID.xReady = TRUE THEN  // Perform an extra RFID ReadTag function, to ensure that correct data is received.
+            RFID.ReadTag(uiStartAddress := 0, uiDataLength := SIZEOF(rfidData), ADR(rfidData));
+
+                    // Flip the direction of the bytes that have been read. Thus the inverse number (correct number) is collected
+            CarrierID := dc_ecp.SwapWORD(rfidData.uiCarrierID);
+
+                // Create a string (CarrierString) from the CarrierID, for later use
+            CarrierString := UINT_TO_STRING(CarrierID);
+
+                // Create a DWORD from the string, for later / debug use
+            CarrierD := STRING_TO_DWORD(CarrierString);
+            state := 321;
+        END_IF
+
+
+    321: // Collect time and date
+            // Run function to collect time and date
+        dDatenTime.xExecute := TRUE;
+        state := 322;
+
+
+    322: // Until time and date has been collected
+            // Returns true when done collecting
+        IF dDatenTime.xDone THEN
+                // Collect the information into a DT variable
+            dTime := dDatenTime.dtDateAndTime;
+
+                // Convert DT variable to string (dateTimeString)
+            dateTimeString := DT_TO_STRING(dTime);
+
+                // Disable collection of time and date
+            dDatenTime.xExecute := FALSE;
+            state := 32;
+        END_IF
+
+
+    32: // Send the CarrierString to the TCP server
+        TCPclient.Send(sMessage := CarrierString);
+
+            // Initialize a 1 second timer
+        timer(IN := TRUE, PT := T  # 1S);
+        state := 331;
+
+
+    331: // Wait for the timer to end
+        IF timer.Q = TRUE THEN
+                // Disable the timer
+            timer(IN := FALSE);
+            state := 4;
+        END_IF
+
+
+    4:  // Wait for TCP to finish and become ready
+        IF TCPclient.xReady = TRUE THEN
+            state := 40;
+        END_IF
+
+
+    40: // Safety check before processing item:
+            // This line of code, checks three sensors.
+            // xBG3 checks correct orientation of cover ( if True, do not process)
+            // xBG8 checks if a top cover is present    ( if True, do not process)
+            // xBG4 checks if a bottom cover is present ( if False, do not process)
+
+        IF IO.xBG3 = FALSE AND IO.xBG8 = FALSE AND IO.xBG4 = TRUE THEN
+                // If everything checks out, move to processing
+            state := 401;
+        ELSE
+                // If something is wrong, discard processing
+            state := 46;
+        END_IF
+
+
+    401: // Get the time and date at the beginning of processing
+        dDatenTime.xExecute := TRUE;
+        state := 402;
+
+
+    402: // Until time and date has been collected
+        IF dDatenTime.xDone THEN
+            dTime := dDatenTime.dtDateAndTime;
+            dateTimeString := DT_TO_STRING(dTime);
+            dDatenTime.xExecute := FALSE;
+            state := 403;
+        END_IF
+
+
+    403: // Send date and time over TCP to the TCP server
+            IF TCPclient.xReady = TRUE THEN
+                    // Send the string containing date and time
+                TCPclient.Send(sMessage := dateTimeString);
+                state := 41;
+        END_IF
+
+
+    41:  // Step 1 in processing : Move drill to the left
+            // Set lifting device to left position
+        IO.xQA2_RIGHT := FALSE;
+        IO.xQA2_LEFT := TRUE;
+
+            // Check if lifting device has reached left position
+            // xBG1 checks if lifting device is at left position
+            // xBG2 checks if lifting device is at right position
+            // An interlock is created when crosschecking both sensors
+        IF IO.xBG1 = TRUE AND IO.xBG2 = FALSE THEN
+            state := 42;
+        END_IF
+
+
+    42: // Step 2 in processing : Move drill down to item
+            // Disengage the holdingbrake (xQA3_BRAKE)
+        IO.xQA3_BRAKE := TRUE;
+
+            // Set lifting device to down position
+        IO.xQA3_UP := FALSE;
+        IO.xQA3_DOWN := TRUE;
+
+            // Check if lifting device has reached down position
+            // xBG6 checks if lifting device is at down position
+            // xBG5 checks if lifting device is at up position
+            // An interlock is created when crosschecking both sensors
+        IF IO.xBG6 = TRUE AND IO.xBG5 = FALSE THEN
+            state := 43;
+        END_IF
+
+        // One would probably add the "turn drill on" feature here, for 2 seconds.
+        // However, we changed the game and the process is now stamping instead... :)
+
+
+    43: // Step 3 in processing : Move drill up away from item
+            // Set lifting device to up position
+        IO.xQA3_UP := TRUE;
+        IO.xQA3_DOWN := FALSE;
+
+            // Check if lifting device has reached up position
+        IF IO.xBG5 = TRUE AND IO.xBG6 = FALSE THEN
+                // Engage holdingbrake when lifting device is at up position
+            IO.xQA3_BRAKE := FALSE;
+            state := 44;
+        END_IF
+
+
+    44: // Step 4 in processing : Move drill to the right
+            // Set lifting device to right position
+        IO.xQA2_RIGHT := TRUE;
+        IO.xQA2_LEFT := FALSE;
+
+            // Check if lifting device has reached right position
+        IF IO.xBG1 = FALSE AND IO.xBG2 = TRUE THEN
+            state := 45;
+        END_IF
+
+
+    45: // Step 5 in processing : Move drill down to item
+            // Disengage the holdingbrake (xQA3_BRAKE)
+        IO.xQA3_BRAKE := TRUE;
+
+            // Set lifting device to down position
+        IO.xQA3_UP := FALSE;
+        IO.xQA3_DOWN := TRUE;
+
+            // Check if lifting device has reached down position
+        IF IO.xBG6 = TRUE AND IO.xBG5 = FALSE THEN
+            state := 46;
+        END_IF
+
+        // One would probably add the "turn drill on - again" feature here, for 2 seconds.
+
+
+    46: // Step 6 in processing : Move drill up away from item
+            // Set lifting device to up position
+        IO.xQA3_UP := TRUE;
+        IO.xQA3_DOWN := FALSE;
+
+            // Check if lifting device has reached up position
+        IF IO.xBG5 = TRUE AND IO.xBG6 = FALSE THEN
+                // Engage holdingbrake when lifting device is at up position
+            IO.xQA3_BRAKE := FALSE;
+
+                // Disengage the carrier lock, and allow carrier to move on
+            io.xMB20 := TRUE;
+
+                // Collect time and date at the end of the process
+            dDatenTime.xExecute := TRUE;
+            state := 501;
+        END_IF
+
+
+    501: // Until time and date has been collected
+        IF dDatenTime.xDone THEN
+            dTime := dDatenTime.dtDateAndTime;
+            dateTimeString := DT_TO_STRING(dTime);
+            dDatenTime.xExecute := FALSE;
+        state := 502;
+        END_IF
+
+
+    502: // Send the time and date from the end of processing, to the TCP server
+        IF TCPclient.xReady = TRUE THEN
+            TCPclient.Send(sMessage := dateTimeString);
+            state := 5;
+        END_IF
+
+    
+    5: // Wait for the carrier to move on
+            // Check if carrier is gone
+        IF IO.xBG21 = FALSE THEN
+                // Engage carrier lock, thus next carrier will not pass
+            io.xMB20 := FALSE;
+                // Move back to state 1 - thus skip the initialization state.
+            state := 1;
+        END_IF
+END_CASE
+
+    // These four clients must run continously during the whole operation.
+    // They allow for TCP communication, RFID handling, timer settings and collection of time and date.
+TCPclient();
+RFID();
+timer();
+dDatenTime();
