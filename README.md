@@ -1,4 +1,4 @@
-#Mini Project 2.0
+# Mini Project 2.0
 **Software and Automation Frameworks
 Aalborg University - 5th Semester Robotics 2021**
 
