@@ -1,0 +1,33 @@
+VAR_GLOBAL
+	
+	xBG20 	      AT %IX1.0 : BOOL; //Stopper Released
+	xBG21	        AT %IX1.1 : BOOL; //Carrier Available
+	xBG22	        AT %IX1.2 : BOOL; //Carrier ID bit 0
+	xBG23	        AT %IX1.3 :	BOOL; //Carrier ID bit 1
+	xBG24	        AT %IX1.4 : BOOL; //Carrier ID bit 2
+	xEmg	        AT %IX0.0 : BOOL; //Emergency Stop
+	
+	xBG1	        AT %IX2.0 : BOOL; //Drill Left
+	xBG2	        AT %IX2.1 : BOOL; //Drill Right
+	xBG3	        AT %IX2.2 : BOOL; //Optical Cover Flipped
+	xBG4	        AT %IX2.3 : BOOL; //Optical Cover Detect
+	xBG5	        AT %IX2.4 : BOOL; //Drill Up
+	xBG6	        AT %IX2.5 : BOOL; //Drill Down
+	xBG8	        AT %IX2.7 : BOOL; //Optical Top Cover Detect
+	
+	xMB20		      AT %QX1.0 : BOOL;	//Release stopper
+	xQA1_LEFT	    AT %QX0.5 : BOOL;	//Conveyor Left
+	xQA1_RIGHT   	AT %QX0.4 : BOOL;	//Conveyor Right
+	xQA1_SLOW	    AT %QX0.6 : BOOL;	//Conveyor Slow
+	xQA1_STOP	    AT %QX0.7 : BOOL;	//Conveyor Stop
+	
+	xQA2_LEFT 	  AT %QX2.0 : BOOL; 	//Drill Left
+	xQA2_RIGHT	  AT %QX2.1 : BOOL;	//Drill Right
+	xQA2_DrilA 	  AT %QX2.2 : BOOL;	//Drill A
+	xQA2_DrilB	  AT %QX2.3 : BOOL;	//Drill B
+	
+	xQA3_UP		    AT %QX2.4 : BOOL; 	//Drill up
+	xQA3_DOWN	    AT %QX2.5 : BOOL;	//Drill Down
+	xQA3_BRAKE	  AT %QX2.6 : BOOL;	//Drill Brake
+
+END_VAR
