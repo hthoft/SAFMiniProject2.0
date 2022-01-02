@@ -8,6 +8,10 @@ The system consists of two main programs;
 - A PLC operating program (**TCP CLIENT**) <-- Written in ST
 - A PC operating program (**TCP SERVER**) <-- Written in Python
 
+A video showing what is going on --> https://www.youtube.com/shorts/YcugWAWQTyA
+
+![ezgif-2-7454e1afb4](https://user-images.githubusercontent.com/72069575/147881400-cdd35e56-2063-4b6f-92cc-17aff5f12d2c.gif)
+
 ### TODO
 
 To finish this mini project the following elements has to be completed:
@@ -17,9 +21,9 @@ To finish this mini project the following elements has to be completed:
 - [x] Create programs for both PC and PLC
 - [x] Conduct tests physically
 - [x] Begin writing report document
-- [ ] Check and finish report
+- [x] Check and finish report
 
-- [ ] All tasks are complete :tada:
+- [x] All tasks are complete :tada:
 
 ## What is going on in general?
 
