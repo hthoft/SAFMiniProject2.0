@@ -34,20 +34,18 @@ root.update()
 localIP = "172.20.66.28"
 localPort = 65000
 bufferSize = 1024
-msgFromServer = "Hello UDP Client"
-bytesToSend = str.encode(msgFromServer)
+
 # Create a datagram socket, bind to address and ip
-UDPServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
-UDPServerSocket.bind((localIP, localPort))
-UDPServerSocket.listen(1)
+TCPServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
+TCPServerSocket.bind((localIP, localPort))
+TCPServerSocket.listen(1)
 
 today = datetime.datetime.now().strftime("%B %d, %Y %H:%M:%S")
-file_time = datetime.datetime.now().strftime("%B %d, %Y")
 
-file_name = ("Log: " + file_time[0:8] + " " + file_time[9:11] + file_time[12:17]+ '.txt')
+file_name = ("Log: " + str(datetime.datetime.now().strftime("%B %d %Y"))+ '.txt')
 
 
-f= open(str(file_name),"w+")
+f = open(str(file_name),"w+")
 
 f.write("Date was: " + str(today))
 f.write("\n")
@@ -57,7 +55,7 @@ while True:
     root.bind('<Escape>', lambda e: root.destroy())
     # Wait for a connection
     print('waiting for a connection')
-    connection, client_address = UDPServerSocket.accept()
+    connection, client_address = TCPServerSocket.accept()
     print("tcp server up and listening")
     try:
         print('connection from', client_address)
