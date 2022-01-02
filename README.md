@@ -46,9 +46,28 @@ This module is included with various inputs and outputs, such as optical sensors
 
 ## Project tasks - Revised
 1. Read the pallet RFID tag when a pallet moves to the module you are working on
-2. Send the RFID info to a PC via TCP/IP as a string
-3. The PC program shall decode the information and display the relevant information on screen during program execution
-4. The PLC shall initialize the process of drilling holes and send the starting time and date to the PC via TCP/IP.
-5. The PLC shall when the process is finished, send the ending time and date to the PC via TCP/IP.
-6. The PC program calculates the processing time and shows the relevant information on screen during program execution. 
-9. The decoded data shall be stored in a file on the PC, so that it can be analyzed later.
+2. Send the RFID info to a PC via TCP/IP as a byte-string. 
+3. The PC program shall decode the information and display the ‘CarrierID’ in a GUI. 
+4. The PLC shall then perform a safety check, to ensure that a bottom cover is ready for processing.
+5. The PLC shall then send the starting time and date to the PC via TCP/IP as a byte string.
+6. The PLC shall then perform the process of drilling/stamping four holes.
+7. The PLC shall then send the ending time and date to the PC via TCP/IP as a byte string.
+8. The PC program shall decode the information and display the starting time and date, and then release the pallet.
+9. The PC program shall calculate and display the used process time.
+10. The decoded data shall be stored in a file on the PC, so that it can be analyzed later.
+
+## Useful pictures...
+
+**Variables used in PLC program**
+
+![VARSetupCode](https://user-images.githubusercontent.com/72069575/147881694-e9d841e8-7929-4d88-8fb0-98a0b64cc1c8.PNG)
+
+**Variables used for sensors and actuators**
+
+![VARSetup](https://user-images.githubusercontent.com/72069575/147881751-94eb8628-d979-4add-a781-10a65ab4ad36.PNG)
+
+**Setup in CODESYS**
+
+![DeviceSetup](https://user-images.githubusercontent.com/72069575/147881772-3d5f8c20-f7b1-415a-859e-f15bf6441658.PNG)
+
+
